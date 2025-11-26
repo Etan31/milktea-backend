@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Sign Up</title>
+
+  <!-- SweetAlert2 -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Poppins', sans-serif;
+      background: url('milktea1.jpg') center/cover no-repeat fixed;
+    }
+
+    .container {
+      width: 100%;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: rgba(255, 237, 214, 0.7);
+      padding: 20px;
+    }
+
+    form {
+      width: 480px;
+      background: #fff7ef;
+      padding: 30px;
+      border-radius: 18px;
+      border: 3px solid #d9a777;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+      position: relative;
+    }
+
+    .close-btn {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      background: #d9a777;
+      color: white;
+      padding: 6px 12px;
+      border-radius: 50%;
+      text-decoration: none;
+      font-weight: bold;
+      font-size: 14px;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 15px;
+    }
+
+    .input-box {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .input-box label {
+      font-size: 14px;
+      margin-bottom: 5px;
+      color: #5a4231;
+    }
+
+    input {
+      padding: 10px;
+      border-radius: 8px;
+      border: 2px solid #d9a777;
+      outline: none;
+      font-size: 14px;
+    }
+
+    .full {
+      grid-column: span 2;
+    }
+
+    .gender-title {
+      font-size: 14px;
+      color: #5a4231;
+      font-weight: 500;
+      display: block;
+      margin-bottom: 5px;
+    }
+
+    button {
+      width: 100%;
+      padding: 12px;
+      background: #d9a777;
+      border: none;
+      color: white;
+      font-size: 16px;
+      border-radius: 10px;
+      cursor: pointer;
+      margin-top: 15px;
+    }
+
+    button:hover {
+      background: #c48a5c;
+    }
+
+    .already {
+      text-align: center;
+      margin-top: 10px;
+    }
+
+    .already a {
+      color: #b46c39;
+      text-decoration: none;
+      font-weight: 600;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <form id="signupForm">
+
+      <a href="Frontpage.html" class="close-btn">X</a>
+
+      <h2 style="text-align:center; color:#5a4231; margin-bottom:20px;">
+        Admin Registration
+      </h2>
+
+      <div class="form-grid">
+
+        <div class="input-box">
+          <label>Full Name</label>
+          <input type="text" name="name" required>
+        </div>
+
+        <div class="input-box">
+          <label>Username</label>
+          <input type="text" name="uname" required>
+        </div>
+
+        <div class="input-box">
+          <label>Email</label>
+          <input type="email" name="email" required>
+        </div>
+
+        <div class="input-box">
+          <label>Phone Number</label>
+          <input type="tel" name="phone" required>
+        </div>
+
+        <div class="input-box">
+          <label>Password</label>
+          <input type="password" name="password" required>
+        </div>
+
+        <div class="input-box">
+          <label>Confirm Password</label>
+          <input type="password" name="cpassword" required>
+        </div>
+
+        <div class="full">
+          <label class="gender-title">Gender</label>
+          <label><input type="radio" name="gender" value="Male"> Male</label>
+          <label style="margin-left:15px;"><input type="radio" name="gender" value="Female"> Female</label>
+        </div>
+
+        <div class="full">
+          <label>
+            <input type="checkbox" id="terms" required>
+            I agree to the <a href="#">Terms</a> & <a href="#">Privacy Policy</a>.
+          </label>
+        </div>
+
+      </div>
+
+      <button type="submit">Sign Up</button>
+
+      <div class="already">
+        <p>Already have an account? 
+          <a href="login-admin.html">Login here</a>
+        </p>
+      </div>
+
+    </form>
+  </div>
+
+ <script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+import { getAuth, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
+import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCpXS9lRDsfHGzLwnT2YFFPM3bRU_6E3r0",
+  authDomain: "e-library-bdbb1.firebaseapp.com",
+  databaseURL: "https://e-library-bdbb1-default-rtdb.firebaseio.com",
+  projectId: "e-library-bdbb1",
+  storageBucket: "e-library-bdbb1.appspot.com",
+  messagingSenderId: "721888979016",
+  appId: "1:721888979016:web:fe65826bc262189a11107d"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getDatabase(app);
+
+document.getElementById("signupForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+
+  const fullname = document.querySelector("input[name='name']").value.trim();
+  const username = document.querySelector("input[name='uname']").value.trim();
+  const email = document.querySelector("input[name='email']").value.trim();
+  const phone = document.querySelector("input[name='phone']").value.trim();
+  const password = document.querySelector("input[name='password']").value;
+  const cpassword = document.querySelector("input[name='cpassword']").value;
+  const gender = document.querySelector("input[name='gender']:checked")?.value || "N/A";
+
+  if (password !== cpassword) {
+    return Swal.fire("Error", "Passwords do not match!", "error");
+  }
+
+  try {
+    // CREATE ADMIN ACCOUNT IN AUTH
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    const user = userCredential.user;
+
+    // SAVE ADMIN DATA IN DATABASE
+    await set(ref(db, "admins/" + user.uid), {
+      fullname,
+      username,
+      email,
+      phone,
+      gender,
+      role: "admin",
+      registeredAt: new Date().toISOString()
+    });
+
+    Swal.fire({
+      icon: "success",
+      title: "Admin Registered!",
+      text: "You can now login as admin."
+    }).then(() => {
+      window.location.href = "login-admin.html";
+    });
+
+  } catch (error) {
+    Swal.fire("Registration Failed", error.message, "error");
+  }
+});
+</script>

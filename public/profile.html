@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>MilkTea Shop - Profile</title>
+  <style>
+    body { margin: 0; font-family: Arial, sans-serif; background: #fff8f0; }
+    .header { display: flex; justify-content: space-between; align-items: center; padding: 10px 20px; background: #8e44ad; color: white; }
+    .navbar { display: flex; align-items: center; gap: 15px; }
+    .profile-icon { width: 40px; height: 40px; border-radius: 50%; cursor: pointer; }
+    #logoutBtn { padding: 6px 12px; border: none; background: #e74c3c; color: white; border-radius: 5px; cursor: pointer; }
+    .cart { position: relative; cursor: pointer; font-size: 18px; }
+    .cart-count { position: absolute; top: -8px; right: -12px; background: yellow; color: black; font-size: 12px; font-weight: bold; padding: 2px 6px; border-radius: 50%; }
+    .section { padding: 20px; }
+    h2 { color: #8e44ad; }
+    .orders-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+    .orders-table th, .orders-table td { border: 1px solid #ccc; padding: 8px; text-align: center; }
+    .orders-table th { background: #8e44ad; color: white; }
+    .input-box { padding: 8px; width: 100%; margin-top: 5px; border-radius: 5px; border: 1px solid #aaa; box-sizing: border-box; }
+    .save-btn { background: #2ecc71; padding: 8px 14px; color: white; border: none; border-radius: 5px; cursor: pointer; margin-top: 10px; }
+    .delivery-display { margin-top: 10px; background: #fff; padding: 12px; border-radius: 8px; border: 1px solid #e0d7ec; }
+    .small-note { color: #666; font-size: 13px; margin-top: 6px; }
+    .product-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; padding: 20px; }
+    .product-card { background: white; border-radius: 15px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); padding: 15px; text-align: center; transition: transform 0.2s; }
+    .product-card:hover { transform: translateY(-5px); }
+    .btn { padding: 6px 12px; text-decoration: none; background: #3498db; color: white; border-radius: 5px; cursor: pointer; }
+    .btn.cart { background: #2ecc71; }
+
+    /* small styles for new icons (keeps your design) */
+    .icon {
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      width:36px;
+      height:36px;
+      border-radius:6px;
+      background: rgba(255,255,255,0.08);
+      cursor:pointer;
+      color: white;
+      font-size:18px;
+      margin-left:6px;
+    }
+
+    .back-btn {
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap:8px;
+      cursor:pointer;
+      color:white;
+      background: rgba(255,255,255,0.08);
+      padding:6px 10px;
+      border-radius:6px;
+      font-weight:600;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Navbar (RESTO OF DESIGN KEPT) -->
+  <header class="header">
+    <!-- Back button (upper-left) -->
+    <div class="back-btn" onclick="goBack()">
+      ⬅ Back
+    </div>
+
+    <h1 class="logo">MilkTea Shop</h1>
+
+    <nav class="navbar">
+      <!-- Notifications icon -->
+      <div class="icon" id="notifIcon" title="Notifications" onclick="openNotifications()">🔔</div>
+
+      <!-- Messages icon -->
+      <div class="icon" id="msgIcon" title="Messages" onclick="openMessages()">💬</div>
+
+      <!-- Cart -->
+      <div class="cart" onclick="goToCart()">
+        🛒 Cart <span class="cart-count" id="cartCount">0</span>
+      </div>
+
+      <!-- Logout -->
+      <button id="logoutBtn">Logout</button>
+    </nav>
+  </header>
+
+  <!-- Profile Info -->
+  <section class="section">
+    <h2>👤 My Profile</h2>
+
+    <!-- Display-only profile info (unchanged design) -->
+    <p><b>Full Name:</b> <span id="fullNameDisplay">Loading...</span></p>
+    <p><b>Username:</b> <span id="usernameDisplay">Loading...</span></p>
+    <p><b>Email:</b> <span id="userEmail">Loading...</span></p>
+    <p><b>Phone:</b> <span id="phoneDisplay">Loading...</span></p>
+    <p><b>Gender:</b> <span id="genderDisplay">Loading...</span></p>
+    <p><b>Member Since:</b> <span id="regDateDisplay">Loading...</span></p>
+  </section>
+
+  <!-- Delivery Info Section (inputs + saved display) -->
+  <section class="section">
+    <h2>📍 Delivery Information</h2>
+
+    <!-- inputs: note the distinct IDs (delivery- prefix) so profile display is not overwritten -->
+    <label>Full Name</label>
+    <input id="deliveryFullName" class="input-box" type="text" placeholder="Recipient full name">
+
+    <label>Contact Number</label>
+    <input id="deliveryContactNumber" class="input-box" type="text" placeholder="0912xxxxxxx">
+
+    <label>Address</label>
+    <input id="deliveryAddress" class="input-box" type="text" placeholder="Street, Building, Barangay">
+
+    <label>City</label>
+    <input id="deliveryCity" class="input-box" type="text" placeholder="City / Municipality">
+
+    <label>Postal Code</label>
+    <input id="deliveryPostalCode" class="input-box" type="text" placeholder="Postal Code">
+
+    <button class="save-btn" id="saveDeliveryBtn">Save Delivery Info</button>
+    <p id="saveMessage" class="small-note" style="color:green; display:none;">Saved successfully!</p>
+
+    <!-- show current saved delivery info (read-only display) -->
+    <div class="delivery-display" id="deliveryDisplay" style="display:none;">
+      <strong>Saved delivery info:</strong>
+      <p id="d_name">Name: —</p>
+      <p id="d_contact">Contact: —</p>
+      <p id="d_address">Address: —</p>
+      <p id="d_city">City: —</p>
+      <p id="d_postal">Postal Code: —</p>
+    </div>
+  </section>
+
+  <!-- My Orders -->
+  <section class="section">
+    <h2>📦 My Orders</h2>
+    <table class="orders-table" id="ordersTable">
+      <thead>
+        <tr>
+          <th>Items</th>
+          <th>Total</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </section>
+
+  <!-- Product Grid -->
+  <section class="product-grid" id="productContainer"></section>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+    import { getDatabase, ref, set, get, onValue } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-database.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
+
+    // Firebase config (same as yours)
+    const firebaseConfig = {
+      apiKey: "AIzaSyCpXS9lRDsfHGzLwnT2YFFPM3bRU_6E3r0",
+      authDomain: "e-library-bdbb1.firebaseapp.com",
+      databaseURL: "https://e-library-bdbb1-default-rtdb.firebaseio.com",
+      projectId: "e-library-bdbb1",
+      storageBucket: "e-library-bdbb1.appspot.com",
+      messagingSenderId: "721888979016",
+      appId: "1:721888979016:web:fe65826bc262189a11107d"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    const auth = getAuth(app);
+
+    // cart count from localStorage (unchanged)
+    const cart = JSON.parse(localStorage.getItem("cart")) || [];
+    document.getElementById("cartCount").innerText = cart.length;
+
+    // Elements
+    const fullNameDisplay = document.getElementById('fullNameDisplay');
+    const usernameDisplay = document.getElementById('usernameDisplay');
+    const userEmailEl = document.getElementById('userEmail');
+    const phoneDisplay = document.getElementById('phoneDisplay');
+    const genderDisplay = document.getElementById('genderDisplay');
+    const regDateDisplay = document.getElementById('regDateDisplay');
+
+    // Delivery inputs (distinct IDs!)
+    const deliveryFullName = document.getElementById('deliveryFullName');
+    const deliveryContactNumber = document.getElementById('deliveryContactNumber');
+    const deliveryAddress = document.getElementById('deliveryAddress');
+    const deliveryCity = document.getElementById('deliveryCity');
+    const deliveryPostalCode = document.getElementById('deliveryPostalCode');
+
+    const saveDeliveryBtn = document.getElementById('saveDeliveryBtn');
+    const saveMessage = document.getElementById('saveMessage');
+    const deliveryDisplay = document.getElementById('deliveryDisplay');
+    const d_name = document.getElementById('d_name');
+    const d_contact = document.getElementById('d_contact');
+    const d_address = document.getElementById('d_address');
+    const d_city = document.getElementById('d_city');
+    const d_postal = document.getElementById('d_postal');
+
+    // Load user profile + orders + products + delivery info when auth state ready
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        // if not logged in redirect to login
+        window.location.href = 'login.html';
+        return;
+      }
+
+      // Show basic email immediately
+      userEmailEl.innerText = user.email || 'No email';
+
+      // 1) Load profile data saved under "users/{uid}" (if you saved these during signup)
+      try {
+        const userRef = ref(db, 'users/' + user.uid);
+        const userSnap = await get(userRef);
+        if (userSnap.exists()) {
+          const data = userSnap.val();
+          fullNameDisplay.innerText = data.fullName || 'Not set';
+          usernameDisplay.innerText = data.username || 'Not set';
+          phoneDisplay.innerText = data.phone || 'Not set';
+          genderDisplay.innerText = data.gender || 'Not set';
+          regDateDisplay.innerText = data.registeredAt ? new Date(data.registeredAt).toLocaleDateString() : 'N/A';
+          // Ensure email display uses DB email if present, fallback to auth email
+          userEmailEl.innerText = data.email || user.email || 'No email';
+        } else {
+          // no user DB entry — keep fallback values
+          fullNameDisplay.innerText = 'Not set';
+          usernameDisplay.innerText = 'Not set';
+        }
+      } catch (err) {
+        console.error('Error loading user profile:', err);
+      }
+
+      // 2) Load delivery info (if exist) and populate inputs & display
+      try {
+        const deliveryRef = ref(db, 'deliveryInfo/' + user.uid);
+        const deliverySnap = await get(deliveryRef);
+        if (deliverySnap.exists()) {
+          const info = deliverySnap.val();
+          // populate inputs (user can edit)
+          deliveryFullName.value = info.fullName || '';
+          deliveryContactNumber.value = info.contactNumber || '';
+          deliveryAddress.value = info.address || '';
+          deliveryCity.value = info.city || '';
+          deliveryPostalCode.value = info.postalCode || '';
+
+          // show read-only saved delivery info block
+          setDeliveryDisplay(info);
+        } else {
+          // no saved delivery info (clear display)
+          deliveryDisplay.style.display = 'none';
+        }
+      } catch (err) {
+        console.error('Error loading delivery info:', err);
+      }
+
+      // 3) Load orders (same as before)
+      try {
+        const ordersRef = ref(db, 'orders/' + user.uid);
+        onValue(ordersRef, (snapshot) => {
+          const tbody = document.querySelector('#ordersTable tbody');
+          tbody.innerHTML = '';
+          snapshot.forEach((order) => {
+            const o = order.val();
+            // safe-check for items array
+            const items = Array.isArray(o.items) ? o.items.map(i => i.name).join(', ') : (o.items ? JSON.stringify(o.items) : '');
+            tbody.innerHTML += `
+              <tr>
+                <td>${items}</td>
+                <td>₱${o.total}</td>
+                <td>${o.status}</td>
+              </tr>
+            `;
+          });
+        });
+      } catch (err) {
+        console.error('Error loading orders:', err);
+      }
+
+      // 4) Load products (same as before)
+      try {
+        const productContainer = document.getElementById('productContainer');
+        const productsRef = ref(db, 'products');
+        onValue(productsRef, (snapshot) => {
+          productContainer.innerHTML = '';
+          snapshot.forEach((child) => {
+            const p = child.val();
+            productContainer.innerHTML += `
+              <div class="product-card">
+                <h3>${p.name}</h3>
+                <p>₱${p.price}</p>
+                <button class="btn cart" onclick="addToCart('${child.key}', '${p.name}', ${p.price})">Add to Cart</button>
+              </div>
+            `;
+          });
+        });
+      } catch (err) {
+        console.error('Error loading products:', err);
+      }
+    });
+
+    // Helper: show delivery info in the read-only block
+    function setDeliveryDisplay(info) {
+      deliveryDisplay.style.display = 'block';
+      d_name.innerText = 'Name: ' + (info.fullName || '—');
+      d_contact.innerText = 'Contact: ' + (info.contactNumber || '—');
+      d_address.innerText = 'Address: ' + (info.address || '—');
+      d_city.innerText = 'City: ' + (info.city || '—');
+      d_postal.innerText = 'Postal Code: ' + (info.postalCode || '—');
+    }
+
+    // Save delivery info to Firebase
+    saveDeliveryBtn.addEventListener('click', async () => {
+      const user = auth.currentUser;
+      if (!user) {
+        alert('You must be logged in to save delivery info.');
+        return;
+      }
+
+      // basic validation (you can expand)
+      if (!deliveryFullName.value.trim()) {
+        alert('Please enter recipient full name.');
+        return;
+      }
+      if (!deliveryContactNumber.value.trim()) {
+        alert('Please enter contact number.');
+        return;
+      }
+      if (!deliveryAddress.value.trim()) {
+        alert('Please enter address.');
+        return;
+      }
+
+      const dataToSave = {
+        fullName: deliveryFullName.value.trim(),
+        contactNumber: deliveryContactNumber.value.trim(),
+        address: deliveryAddress.value.trim(),
+        city: deliveryCity.value.trim(),
+        postalCode: deliveryPostalCode.value.trim(),
+        updatedAt: new Date().toISOString()
+      };
+
+      try {
+        await set(ref(db, 'deliveryInfo/' + user.uid), dataToSave);
+        // show message & update read-only display
+        saveMessage.style.display = 'block';
+        setTimeout(() => saveMessage.style.display = 'none', 2000);
+
+        setDeliveryDisplay(dataToSave);
+      } catch (err) {
+        console.error('Error saving delivery info:', err);
+        alert('Failed to save delivery info. Try again.');
+      }
+    });
+
+    // Cart functions (unchanged)
+    window.addToCart = (id, name, price) => {
+      const cartArr = JSON.parse(localStorage.getItem('cart')) || [];
+      cartArr.push({ id, name, price });
+      localStorage.setItem('cart', JSON.stringify(cartArr));
+      document.getElementById('cartCount').innerText = cartArr.length;
+      alert(`${name} added to cart!`);
+    };
+
+    function updateCartCount() {
+      const cartArr = JSON.parse(localStorage.getItem('cart')) || [];
+      document.getElementById('cartCount').innerText = cartArr.length;
+    }
+    updateCartCount();
+
+    window.goToCart = () => window.location.href = 'cart.html';
+    window.goToProfile = () => window.location.href = 'profile.html';
+
+    // Back button
+    window.goBack = () => {
+      // if you have a dashboard page use that path instead
+      // e.g. window.location.href = 'dashboard.html';
+      window.location.href = 'homepage.html';
+    };
+
+    // Notifications & Messages handlers (placeholder behavior)
+    window.openNotifications = () => {
+      // You can replace this with a real panel later
+      alert('No new notifications.');
+    };
+    window.openMessages = () => {
+      // You can replace this with a real inbox later
+      alert('No new messages.');
+    };
+
+    // Logout: sign out from Firebase and clear localStorage
+    document.getElementById('logoutBtn').addEventListener('click', async () => {
+      try {
+        await signOut(auth);
+      } catch (err) {
+        console.warn('Sign out error (ignored):', err);
+      }
+      localStorage.clear();
+      window.location.href = 'login.html';
+    });
+  </script>
+</body>
+</html>

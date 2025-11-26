@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Admin Order Processing</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" />
+<style>
+  body { font-family: Arial, sans-serif; background: #f9f9f9; margin: 0; }
+  h1 { color: #8e44ad; padding: 20px; }
+  .card { background: white; margin: 20px; padding: 20px; border-radius: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
+  table { width:100%; border-collapse: collapse; margin-top: 15px; }
+  th, td { border: 1px solid #ddd; padding: 10px; text-align: center; vertical-align: middle; }
+  th { background: #8e44ad; color: #fff; }
+  .btn { padding: 6px 12px; border: none; border-radius: 6px; cursor: pointer; }
+  .btn-refresh { background: #3498db; color: white; margin-bottom: 10px; }
+  .status-select { padding:6px 8px; border-radius:6px; border:1px solid #ccc; }
+  .small { font-size:12px; color:#666; }
+  .items-cell { text-align:left; max-width:420px; word-break:break-word; }
+  .action-col { display:flex; gap:8px; justify-content:center; }
+</style>
+</head>
+<body>
+
+<h1>📦 Admin — Order Processing</h1>
+
+<div class="card">
+  <button class="btn btn-refresh" id="refreshBtn">🔄 Refresh</button>
+  <table id="ordersTable" aria-describedby="orders">
+    <thead>
+      <tr>
+        <th>User Email</th>
+        <th>Items</th>
+        <th>Total</th>
+        <th>Payment</th>
+        <th>Status</th>
+        <th>Placed At</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+  <div id="loading" class="small" style="margin-top:8px;"></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+const tbody = document.querySelector("#ordersTable tbody");
+const refreshBtn = document.getElementById("refreshBtn");
+const loadingText = document.getElementById("loading");
+
+const STATUS_OPTIONS = [
+  { value: "pending", label: "Pending" },
+  { value: "processing", label: "Processing" },
+  { value: "on the delivery", label: "On the delivery" },
+  { value: "delivered", label: "Delivered" },
+  { value: "cancelled", label: "Cancelled" }
+];
+
+function itemsToHtml(items) {
+  try {
+    let arr = items;
+    if (typeof items === "string") {
+      try { arr = JSON.parse(items); } catch { arr = [{ name: items }] }
+    }
+    if (!Array.isArray(arr)) arr = [arr];
+    return `<div style="text-align:left">` + arr.map(it => {
+      const name = it.name || "Item";
+      const qty = it.qty || it.quantity || 1;
+      return `<div style="padding:4px 0;border-bottom:1px solid #f0f0f0;"><strong>${escapeHtml(name)}</strong> — qty: ${escapeHtml(String(qty))}</div>`;
+    }).join("") + `</div>`;
+  } catch {
+    return escapeHtml(String(items));
+  }
+}
+function escapeHtml(s) { return String(s || "").replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+async function loadPendingOrders(){
+  loadingText.textContent = "Loading orders…";
+  tbody.innerHTML = `<tr><td colspan="7">Loading…</td></tr>`;
+  try {
+    const res = await fetch("/api/orders/ongoing");
+    const json = await res.json();
+    if(!json.success || !Array.isArray(json.orders) || json.orders.length === 0){
+      tbody.innerHTML = `<tr><td colspan="7">No ongoing orders</td></tr>`;
+      loadingText.textContent = "";
+      return;
+    }
+    tbody.innerHTML = "";
+
+    json.orders.forEach(order => {
+      const tr = document.createElement("tr");
+
+      const statusSelect = document.createElement("select");
+      statusSelect.className = "status-select";
+      STATUS_OPTIONS.forEach(opt => {
+        const el = document.createElement("option");
+        el.value = opt.value;
+        el.textContent = opt.label;
+        if(String(order.status||"").toLowerCase() === opt.value) el.selected = true;
+        statusSelect.appendChild(el);
+      });
+
+      statusSelect.addEventListener("change", async (e) => {
+        const newStatus = e.target.value;
+        const sw = await Swal.fire({
+          title: "Change status?",
+          html: `Change order <strong>#${escapeHtml(String(order.order_id))}</strong> to <strong>${escapeHtml(newStatus)}</strong>?`,
+          icon: "question",
+          showCancelButton: true,
+          confirmButtonText: "Yes, change"
+        });
+        if(!sw.isConfirmed){ e.target.value = order.status || "pending"; return; }
+
+        try {
+          const upd = await fetch("/api/orders/update-status", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ order_id: order.order_id, status: newStatus })
+          });
+          const data = await upd.json();
+          if(!data.success){ Swal.fire("Error","Update failed","error"); e.target.value = order.status; return; }
+
+          // reflect locally
+          order.status = newStatus;
+          Swal.fire("Success","Order status updated","success");
+          loadPendingOrders();
+        } catch(err){
+          console.error(err);
+          Swal.fire("Error","Server error updating status","error");
+          e.target.value = order.status || "pending";
+        }
+      });
+
+      // quick action buttons
+      const approveBtn = createActionBtn("✔ Approve","#2ecc71", () => { statusSelect.value = "processing"; statusSelect.dispatchEvent(new Event("change")); });
+      const deliverBtn = createActionBtn("🚚 On delivery","#f39c12", () => { statusSelect.value = "on the delivery"; statusSelect.dispatchEvent(new Event("change")); });
+      const deliveredBtn = createActionBtn("✅ Delivered","#3498db", () => { statusSelect.value = "delivered"; statusSelect.dispatchEvent(new Event("change")); });
+
+      tr.innerHTML = `
+        <td>${escapeHtml(order.customer_email || order.user_email || "N/A")}</td>
+        <td class="items-cell">${itemsToHtml(order.items)}</td>
+        <td>₱${Number(order.total_amount || order.total_price || 0).toFixed(2)}</td>
+        <td>${escapeHtml(order.payment_method || "—")}</td>
+        <td></td>
+        <td>${order.created_at ? new Date(order.created_at).toLocaleString() : "—"}</td>
+        <td class="action-col"></td>
+      `;
+
+      tr.cells[4].appendChild(statusSelect);
+      tr.cells[6].appendChild(approveBtn);
+      tr.cells[6].appendChild(deliverBtn);
+      tr.cells[6].appendChild(deliveredBtn);
+
+      tbody.appendChild(tr);
+    });
+
+    loadingText.textContent = `Loaded ${json.orders.length} orders`;
+  } catch (err) {
+    console.error("Load orders error:", err);
+    tbody.innerHTML = `<tr><td colspan="7">Error loading orders</td></tr>`;
+    loadingText.textContent = "Error loading orders, check console.";
+  }
+}
+
+function createActionBtn(text, background, onClick) {
+  const b = document.createElement("button");
+  b.className = "btn";
+  b.textContent = text;
+  b.style.background = background;
+  b.style.color = "#fff";
+  b.addEventListener("click", onClick);
+  return b;
+}
+
+refreshBtn.addEventListener("click", loadPendingOrders);
+loadPendingOrders();
+</script>
+</body>
+</html>

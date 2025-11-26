@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login</title>
+  <link rel="stylesheet" href="login.css">
+  <!-- SweetAlert2 -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+<body>
+  <div class="wrapper">
+    <form id="loginForm">
+      <a href="index.html"><h1>X</h1></a>
+      <h2>Login</h2>
+      <div class="wrapped">
+        <div class="input-box">
+          <label>Email</label>
+          <input type="email" name="email" required>
+        </div>
+        <div class="input-box">
+          <label>Password</label>
+          <input type="password" name="password" required>
+        </div>
+      </div>
+      <div class="button-wrapper">
+        <button type="submit">Log in</button>
+      </div>
+      <div class="account">
+        <p>Don’t have an account? <a href="signup.html">Sign Up here</a></p>
+      </div>
+    </form>
+  </div>
+
+  <!-- Firebase Script -->
+
+
+ <script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+  import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
+  import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-database.js";
+
+  // =========================
+  // 🔥 Firebase Configuration
+  // =========================
+  const firebaseConfig = {
+    apiKey: "AIzaSyCpXS9lRDsfHGzLwnT2YFFPM3bRU_6E3r0",
+    authDomain: "e-library-bdbb1.firebaseapp.com",
+    databaseURL: "https://e-library-bdbb1-default-rtdb.firebaseio.com",
+    projectId: "e-library-bdbb1",
+    storageBucket: "e-library-bdbb1.appspot.com",
+    messagingSenderId: "721888979016",
+    appId: "1:721888979016:web:fe65826bc262189a11107d"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getDatabase(app);
+
+  // =========================
+  // 🔐 LOGIN FUNCTIONALITY
+  // =========================
+  document.getElementById("loginForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const email = document.querySelector("input[name='email']").value;
+    const password = document.querySelector("input[name='password']").value;
+
+    try {
+      // Sign in user
+      const cred = await signInWithEmailAndPassword(auth, email, password);
+      const uid = cred.user.uid;
+
+      // Fetch user data from Realtime DB
+      const userRef = ref(db, "users/" + uid);
+      const snap = await get(userRef);
+
+      if (!snap.exists()) {
+        Swal.fire({
+          icon: "error",
+          title: "User Data Missing",
+          text: "This account does not exist in the database!"
+        });
+        return;
+      }
+
+      const userData = snap.val();
+
+      // (OPTIONAL) block admin login here
+      if (userData.role === "admin") {
+        Swal.fire({
+          icon: "warning",
+          title: "Access Denied",
+          text: "Admin accounts cannot log in here."
+        });
+        return;
+      }
+
+      // Save session
+      localStorage.setItem("user", JSON.stringify({
+        uid: uid,
+        email: email,
+        role: userData.role,
+        username: userData.username || "User"
+      }));
+
+      // Success
+      Swal.fire({
+        icon: "success",
+        title: `Welcome, ${userData.username || "User"}!`,
+        text: "Login successful. Redirecting..."
+      }).then(() => {
+        window.location.href = "homepage.html";
+      });
+
+    } catch (error) {
+      Swal.fire({
+        icon: "error",
+        title: "Login Failed",
+        text: error.message
+      });
+    }
+  });
+</script>

@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Order Now</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #fff8f0; padding: 20px; }
+    h1 { color: #8e44ad; }
+    .order-box { background: white; padding: 20px; border-radius: 10px; width: 300px; margin: auto; box-shadow: 0 2px 6px rgba(0,0,0,0.1); text-align: center; }
+    img { width: 150px; border-radius: 10px; }
+    button { margin-top: 10px; padding: 10px 20px; border: none; border-radius: 5px; background: #2ecc71; color: white; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <h1>🥤 Order Details</h1>
+  <div class="order-box" id="orderBox"></div>
+
+  <script>
+    const product = JSON.parse(localStorage.getItem("buyNow"));
+
+    if (product) {
+      document.getElementById("orderBox").innerHTML = `
+        <img src="${product.img}" alt="${product.name}">
+        <h2>${product.name}</h2>
+        <p>Price: ₱${product.price}</p>
+        <button onclick="placeOrder()">Confirm Order</button>
+      `;
+    } else {
+      document.getElementById("orderBox").innerHTML = "<p>No product selected.</p>";
+    }
+
+    function placeOrder() {
+      alert("✅ Order placed successfully for " + product.name + "!");
+      localStorage.removeItem("buyNow");
+      window.location.href = "homepage.html";
+    }
+  </script>
+</body>
+</html>

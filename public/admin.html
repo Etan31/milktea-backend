@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Admin Dashboard</title>
+
+<style>
+  body { font-family: Arial, sans-serif; background: #f9f9f9; margin: 0; }
+  h1, h2 { color: #8e44ad; }
+  table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+  th, td { border: 1px solid #ccc; padding: 10px; text-align: center; vertical-align: middle; }
+  th { background: #8e44ad; color: white; }
+  .btn { padding: 6px 12px; border: none; border-radius: 4px; cursor: pointer; margin: 2px; }
+  .btn.add { background: #2ecc71; color: white; }
+  .btn.edit { background: #3498db; color: white; }
+  .btn.delete { background: #e74c3c; color: white; }
+  .btn.logout { background: #e74c3c; color: white; margin-left: 15px; }
+  .btn.view { background: #8e44ad; color: white; }
+  .card { background: white; padding: 20px; border-radius: 8px; margin: 20px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
+  .header { padding: 20px; background: #8e44ad; color: white; display: flex; justify-content: space-between; align-items: center; }
+  nav a { color: white; margin-left: 20px; text-decoration: none; font-weight: bold; }
+  nav a:hover { text-decoration: underline; }
+  img.thumb { max-width: 70px; border-radius: 5px; max-height:70px; object-fit:cover; }
+  small.muted { color: #666; font-size: 12px; }
+</style>
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+</head>
+<body>
+
+<div class="header">
+  <h1>📊 Admin Dashboard</h1>
+  <nav>
+    <a href="adminMessages.html">💬 Messages</a>
+    <a href="adminProfile.html">👤 Admin Profile</a>
+    <a href="admin order.html">👤 Admin order</a>
+    <button class="btn logout" onclick="logout()">🚪 Logout</button>
+  </nav>
+</div>
+
+<!-- PRODUCTS CARD -->
+<div class="card">
+  <h2>🍹 Products</h2>
+  <button class="btn add" onclick="openAddProduct()">➕ Add Product</button>
+  <table id="productsTable">
+    <thead><tr><th>Image</th><th>Name</th><th>Price</th><th>Actions</th></tr></thead>
+    <tbody></tbody>
+  </table>
+</div>
+
+<!-- ORDERS -->
+<div class="card">
+  <h2>📦 Ongoing Orders</h2>
+  <button class="btn view" onclick="window.location.href='doneOrders.html'">📜 View Done Orders</button>
+  <table id="ordersTable">
+    <thead><tr><th>User Email</th><th>Items</th><th>Total</th><th>Payment</th><th>Status</th><th>Date/Time</th></tr></thead>
+    <tbody></tbody>
+  </table>
+</div>
+
+<!-- USERS -->
+<div class="card">
+  <h2>👥 Registered Users</h2>
+  <table id="usersTable">
+    <thead><tr><th>Full Name</th><th>Email</th><th>Role</th><th>Actions</th></tr></thead>
+    <tbody></tbody>
+  </table>
+  <small class="muted">Users here are role="user".</small>
+</div>
+
+<!-- ADMINS -->
+<div class="card">
+  <h2>🛡️ Admin Accounts</h2>
+  <table id="adminsTable">
+    <thead><tr><th>Full Name</th><th>Email</th><th>Role</th><th>Actions</th></tr></thead>
+    <tbody></tbody>
+  </table>
+  <small class="muted">Admins here are role="admin".</small>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+import { getDatabase, ref, onValue, set, update, remove } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-database.js";
+import { getAuth, signOut } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCpXS9lRDsfHGzLwnT2YFFPM3bRU_6E3r0",
+  authDomain: "e-library-bdbb1.firebaseapp.com",
+  databaseURL: "https://e-library-bdbb1-default-rtdb.firebaseio.com",
+  projectId: "e-library-bdbb1",
+  storageBucket: "e-library-bdbb1.appspot.com",
+  messagingSenderId: "721888979016",
+  appId: "1:721888979016:web:fe65826bc262189a11107d"
+};
+
+const appFB = initializeApp(firebaseConfig);
+const db = getDatabase(appFB);
+const auth = getAuth(appFB);
+
+const productsTable = document.querySelector("#productsTable tbody");
+const usersTable = document.querySelector("#usersTable tbody");
+const adminsTable = document.querySelector("#adminsTable tbody");
+const ordersTable = document.querySelector("#ordersTable tbody");
+
+window.logout = () => signOut(auth).then(() => window.location.href = "login.html").catch(console.error);
+
+/* ----------------------------- LOAD PRODUCTS ----------------------------- */
+const productsRef = ref(db, "products");
+onValue(productsRef, snap => {
+  productsTable.innerHTML = "";
+  snap.forEach(child => {
+    const p = child.val();
+    const id = child.key;
+
+    const row = document.createElement("tr");
+    row.innerHTML = `
+      <td><img class="thumb" src="${p.imageBase64 || p.image_url || ""}" alt="${p.name || 'Product'}"></td>
+      <td>${p.name}</td>
+      <td>₱${Number(p.price).toFixed(2)}</td>
+      <td>
+        <button class="btn edit edit-btn"
+          data-id="${id}"
+          data-name="${p.name}"
+          data-price="${p.price}"
+          data-image="${p.imageBase64 || ""}">
+          ✏️ Edit
+        </button>
+
+        <button class="btn delete" onclick="confirmDeleteProduct('${id}')">🗑️ Delete</button>
+      </td>
+    `;
+    productsTable.appendChild(row);
+  });
+});
+
+/* ---- EDIT BUTTON LISTENER ---- */
+document.addEventListener("click", e => {
+  if (!e.target.classList.contains("edit-btn")) return;
+
+  const id = e.target.dataset.id;
+  const name = e.target.dataset.name;
+  const price = e.target.dataset.price;
+  const image = e.target.dataset.image;
+
+  startEditProduct(id, name, price, image);
+});
+
+
+/* ----------------------------- ADD PRODUCT ----------------------------- */
+window.openAddProduct = () => {
+  Swal.fire({
+    title: "Add New Product",
+    html: `
+      <input id="pname" class="swal2-input" placeholder="Product Name">
+      <input id="pprice" type="number" class="swal2-input" placeholder="Price">
+      <input id="pimg" type="file" class="swal2-file">
+    `,
+    showCancelButton: true,
+    confirmButtonText: "Save",
+    preConfirm: () => new Promise(resolve => {
+      const file = document.getElementById("pimg").files[0];
+      const name = document.getElementById("pname").value;
+      const price = document.getElementById("pprice").value;
+
+      if (!file) return resolve({ name, price, image: null });
+
+      const reader = new FileReader();
+      reader.onload = () => resolve({ name, price, image: reader.result });
+      reader.readAsDataURL(file);
+    })
+  }).then(async result => {
+    if (!result.isConfirmed) return;
+    const { name, price, image } = result.value;
+    const id = Date.now().toString();
+
+    try {
+      await set(ref(db, "products/" + id), { name, price, imageBase64: image });
+      await fetch("http://localhost:5000/api/products", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, price, image_url: image })
+      });
+      Swal.fire("Saved!", "Product added successfully", "success");
+    } catch (err) {
+      console.error(err);
+      Swal.fire("Error!", "Failed to add product", "error");
+    }
+  });
+};
+
+/* ---------------------------- EDIT PRODUCT ---------------------------- */
+window.startEditProduct = (id, name, price, image) => {
+  Swal.fire({
+    title: "Edit Product",
+    html: `
+      <input id="ename" class="swal2-input" value="${name}">
+      <input id="eprice" type="number" class="swal2-input" value="${price}">
+      <p>Upload new image (optional):</p>
+      <input id="eimg" type="file" class="swal2-file">
+    `,
+    showCancelButton: true,
+    confirmButtonText: "Update",
+    preConfirm: () => new Promise(resolve => {
+      const file = document.getElementById("eimg").files[0];
+      const updatedName = document.getElementById("ename").value;
+      const updatedPrice = document.getElementById("eprice").value;
+
+      if (!file) return resolve({ name: updatedName, price: updatedPrice, image });
+
+      const reader = new FileReader();
+      reader.onload = () => resolve({ name: updatedName, price: updatedPrice, image: reader.result });
+      reader.readAsDataURL(file);
+    })
+  }).then(async result => {
+    if (!result.isConfirmed) return;
+    const { name, price, image } = result.value;
+
+    try {
+      await update(ref(db, "products/" + id), { name, price, imageBase64: image });
+      Swal.fire("Updated!", "Product updated", "success");
+    } catch (err) {
+      console.error(err);
+      Swal.fire("Error!", "Failed to update product", "error");
+    }
+  });
+};
+
+/* ----------------------------- DELETE PRODUCT ----------------------------- */
+window.confirmDeleteProduct = (id) => {
+  Swal.fire({
+    title: "Delete Product?",
+    icon: "warning",
+    showCancelButton: true,
+    confirmButtonText: "Delete"
+  }).then(async result => {
+    if (!result.isConfirmed) return;
+    try {
+      await remove(ref(db, `products/${id}`));
+      await fetch("http://localhost:5000/api/delete-product", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ product_id: id })
+      });
+      Swal.fire("Deleted!", "Product removed.", "success");
+    } catch (err) {
+      console.error(err);
+      Swal.fire("Error!", "Failed to delete product", "error");
+    }
+  });
+};
+
+/* ----------------------------- LOAD USERS ----------------------------- */
+function loadUsers() {
+  fetch("http://localhost:5000/api/users")
+    .then(res => res.json())
+    .then(data => {
+      usersTable.innerHTML = "";
+      if (!data.success) return;
+      data.users.forEach(u => {
+        if (u.role !== "user") return;
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td>${u.fullname || "N/A"}</td>
+          <td>${u.email}</td>
+          <td>${u.role}</td>
+          <td><button class="btn delete" onclick="deleteUser('${u.uid}')">🗑️ Delete</button></td>
+        `;
+        usersTable.appendChild(row);
+      });
+    }).catch(console.error);
+}
+
+window.deleteUser = (uid) => {
+  Swal.fire({
+    title: "Delete User?",
+    icon: "warning",
+    showCancelButton: true,
+    confirmButtonText: "Delete"
+  }).then(async r => {
+    if (!r.isConfirmed) return;
+    try {
+      await fetch("http://localhost:5000/api/delete-user", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ uid })
+      });
+      loadUsers();
+      Swal.fire("Deleted!", "User removed.", "success");
+    } catch (err) {
+      console.error(err);
+      Swal.fire("Error!", "Failed to delete user", "error");
+    }
+  });
+};
+
+/* ----------------------------- LOAD ORDERS (FIXED) ----------------------------- */
+async function loadOngoingOrders() {
+  try {
+    const res = await fetch("http://localhost:5000/api/orders/ongoing");
+    const data = await res.json();
+
+    ordersTable.innerHTML = "";
+
+    if (!data.success || !Array.isArray(data.orders) || data.orders.length === 0) {
+      ordersTable.innerHTML = `<tr><td colspan="6">No ongoing orders found</td></tr>`;
+      return;
+    }
+
+    data.orders.forEach(order => {
+      const row = document.createElement("tr");
+      row.innerHTML = `
+        <td>${order.customer_email || "N/A"}</td>
+        <td>${order.items ? order.items : "—"}</td>
+        <td>₱${Number(order.total_amount || order.total_price || 0).toFixed(2)}</td>
+        <td>${order.payment_method || "—"}</td>
+        <td>${order.status}</td>
+        <td>${order.created_at ? new Date(order.created_at).toLocaleString() : "—"}</td>
+      `;
+      ordersTable.appendChild(row);
+    });
+  } catch (err) {
+    console.error("Load Orders Error:", err);
+    ordersTable.innerHTML = `<tr><td colspan="6">Error loading orders</td></tr>`;
+  }
+}
+loadOngoingOrders();
+
+/* ----------------------------- LOAD ADMINS ----------------------------- */
+function loadAdmins() {
+  fetch("http://localhost:5000/api/admins")
+    .then(res => res.json())
+    .then(data => {
+      adminsTable.innerHTML = "";
+      if (!data.success) return;
+      data.admins.forEach(a => {
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td>${a.fullname || "N/A"}</td>
+          <td>${a.email}</td>
+          <td>${a.role}</td>
+          <td><button class="btn delete" onclick="deleteAdmin('${a.uid}')">🗑️ Delete</button></td>
+        `;
+        adminsTable.appendChild(row);
+      });
+    }).catch(console.error);
+}
+
+window.deleteAdmin = (uid) => {
+  Swal.fire({
+    title: "Delete Admin?",
+    icon: "warning",
+    showCancelButton: true,
+    confirmButtonText: "Delete"
+  }).then(async r => {
+    if (!r.isConfirmed) return;
+    try {
+      await fetch("http://localhost:5000/api/delete-admin", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ uid })
+      });
+      loadAdmins();
+      Swal.fire("Deleted!", "Admin removed.", "success");
+    } catch (err) {
+      console.error(err);
+      Swal.fire("Error!", "Failed to delete admin", "error");
+    }
+  });
+};
+
+/* ----------------------------- INITIAL LOAD ----------------------------- */
+loadUsers();
+loadAdmins();
+</script>
+</body>
+</html>

@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>MilkTea Shop - Homepage</title>
+  <link rel="stylesheet" href="homepage.css">
+  <style>
+    body {
+      margin:0;
+      font-family: Arial, sans-serif;
+      background:#fafafa;
+    }
+    header {
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      padding:10px 20px;
+      background:#8e44ad;
+      box-shadow:0 2px 5px rgba(0,0,0,0.1);
+    }
+    header h1 { margin:0; }
+    nav { display:flex; gap:15px; align-items:center; }
+    nav a, nav button {
+      text-decoration:none;
+      background:none;
+      border:none;
+      cursor:pointer;
+      font-size:15px;
+      color:#333;
+    }
+    nav button:hover, nav a:hover { color:#d63384; }
+    .products-grid {
+      display:grid;
+      grid-template-columns:repeat(5,1fr);
+      gap:20px;
+      padding:20px;
+    }
+    .product-card {
+      border:1px solid #ddd;
+      border-radius:8px;
+      padding:10px;
+      text-align:center;
+      background:#fff;
+      box-shadow:0 2px 5px rgba(0,0,0,0.06);
+    }
+    .product-card img {
+      width:100%;
+      height:160px;
+      object-fit:contain; /* ✅ buo ang pic */
+      border-radius:6px;
+      background:#f9f9f9;
+    }
+    .btn {
+      padding:6px 10px;
+      border:none;
+      border-radius:6px;
+      cursor:pointer;
+      background:#f8c6e0;
+    }
+    .btn:hover { background:#f3a9d0; }
+    .search-bar {
+      margin:10px auto;
+      padding:0 20px;
+      max-width:400px;
+    }
+    .search-bar input {
+      width:100%;
+      padding:8px 12px;
+      border:1px solid #ccc;
+      border-radius:8px;
+    }
+    /* dropdown notification box */
+    #notifBox {
+      position:absolute;
+      top:50px;
+      right:20px;
+      background:#fff;
+      border:1px solid #ccc;
+      border-radius:8px;
+      box-shadow:0 2px 6px rgba(0,0,0,0.2);
+      width:250px;
+      display:none;
+      z-index:10;
+      max-height:300px;
+      overflow-y:auto;
+    }
+    #notifBox ul { list-style:none; margin:0; padding:10px; }
+    #notifBox li {
+      padding:6px 0;
+      border-bottom:1px solid #eee;
+      font-size:14px;
+    }
+    #notifBox li:last-child { border:none; }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+<body>
+<header>
+  <h1>🧋 MilkTea Shop</h1>
+  <nav>
+    <a href="profile.html">👤 Profile</a>
+    <a href="messages.html">💬 Messages</a>
+    <button id="notifBtn">🔔 Notifications</button>
+    <button onclick="goToCart()">🛒 Cart (<span id="cartCount">0</span>)</button>
+    <button id="logoutBtn">🚪 Logout</button>
+  </nav>
+</header>
+
+<!-- Notifications dropdown -->
+<div id="notifBox"><ul id="notifList"></ul></div>
+
+<!-- Search Bar -->
+<div class="search-bar">
+  <input type="text" id="searchInput" placeholder="🔍 Search products...">
+</div>
+
+<main>
+  <div id="productsGrid" class="products-grid"></div>
+</main>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+  import { getAuth, signOut } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
+  import { getDatabase, ref, onValue, push } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-database.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyCpXS9lRDsfHGzLwnT2YFFPM3bRU_6E3r0",
+    authDomain: "e-library-bdbb1.firebaseapp.com",
+    databaseURL: "https://e-library-bdbb1-default-rtdb.firebaseio.com",
+    projectId: "e-library-bdbb1",
+    storageBucket: "e-library-bdbb1.appspot.com",
+    messagingSenderId: "721888979016",
+    appId: "1:721888979016:web:fe65826bc262189a11107d"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getDatabase(app);
+
+  const productsGrid = document.getElementById("productsGrid");
+  const cartCount = document.getElementById("cartCount");
+  const searchInput = document.getElementById("searchInput");
+  const notifBtn = document.getElementById("notifBtn");
+  const notifBox = document.getElementById("notifBox");
+  const notifList = document.getElementById("notifList");
+
+  let cart = JSON.parse(localStorage.getItem("cart") || "[]");
+  let allProducts = [];
+
+  function renderCartCount(){
+    cartCount.innerText = cart.length;
+  }
+  renderCartCount();
+
+  // ✅ Fetch products (lahat makikita)
+  onValue(ref(db,"products"), (snap)=>{
+    allProducts = [];
+    snap.forEach(ch=> {
+      allProducts.push({ id: ch.key, ...ch.val() });
+    });
+    renderProducts(allProducts);
+  });
+
+  // ✅ Render products
+  function renderProducts(list){
+    productsGrid.innerHTML = "";
+    list.forEach(p=>{
+      const img = p.imageBase64 && p.imageBase64.trim() !== "" 
+        ? p.imageBase64 
+        : "https://via.placeholder.com/200x180?text=No+Image";
+
+      const card = document.createElement("div");
+      card.className = "product-card";
+      card.innerHTML = `
+        <img src="${img}" alt="${p.name}">
+        <h3>${p.name}</h3>
+        <p>₱${Number(p.price).toFixed(2)}</p>
+        <div style="display:flex;gap:8px;justify-content:center;margin-top:8px;">
+          <button class="btn" onclick="addToCart('${p.id}','${p.name}',${p.price})">Add to Cart</button>
+          <button class="btn" onclick="buyNow('${p.id}','${p.name}',${p.price})">Buy Now</button>
+        </div>
+      `;
+      productsGrid.appendChild(card);
+    });
+  }
+
+  // ✅ Search
+  searchInput.addEventListener("input", e=>{
+    const kw = e.target.value.toLowerCase();
+    renderProducts(allProducts.filter(p=>p.name.toLowerCase().includes(kw)));
+  });
+
+  // ✅ Cart
+  window.addToCart=(id,name,price)=>{
+    cart.push({id,name,price});
+    localStorage.setItem("cart",JSON.stringify(cart));
+    renderCartCount();
+    Swal.fire("🛒 Added", `${name} added to cart`,"success");
+  };
+
+  window.buyNow=(id,name,price)=>{
+    const user=auth.currentUser;
+    if(!user){
+      Swal.fire("⚠️ Login required","","warning");
+      return;
+    }
+    Swal.fire({
+      title:`Checkout - ${name}`,
+      input:'text',
+      inputLabel:'Payment method',
+      inputValue:'Cash on Delivery',
+      showCancelButton:true
+    }).then(res=>{
+      if(res.isConfirmed){
+        const order={
+          userEmail:user.email,
+          items:[{id,name,price}],
+          total:price,
+          payment:res.value,
+          status:"Pending",
+          createdAt:new Date().toISOString()
+        };
+        push(ref(db,`orders/${user.uid}`),order)
+          .then(()=>Swal.fire("✅ Order Placed","","success"));
+      }
+    });
+  };
+
+  window.goToCart=()=>{
+    window.location.href="cart.html";
+  };
+
+  // ✅ Logout confirm
+  document.getElementById("logoutBtn").addEventListener("click",()=>{
+    Swal.fire({
+      title:"Are you sure?",
+      text:"Do you really want to logout?",
+      icon:"warning",
+      showCancelButton:true,
+      confirmButtonText:"Yes, logout",
+      cancelButtonText:"Cancel"
+    }).then((result)=>{
+      if(result.isConfirmed){
+        signOut(auth).then(()=>{
+          localStorage.removeItem("user");
+          window.location.href="index.html";
+        });
+      }
+    });
+  });
+
+  // ✅ Notifications toggle
+  notifBtn.addEventListener("click",()=>{
+    if(notifBox.style.display==="block"){
+      notifBox.style.display="none";
+      return;
+    }
+    notifBox.style.display="block";
+    notifList.innerHTML="<li>Loading...</li>";
+
+    const user=auth.currentUser;
+    if(!user){
+      notifList.innerHTML="<li>Login to see orders</li>";
+      return;
+    }
+
+    onValue(ref(db,`orders/${user.uid}`),(snap)=>{
+      notifList.innerHTML="";
+      if(!snap.exists()){
+        notifList.innerHTML="<li>No orders yet</li>";
+        return;
+      }
+      snap.forEach(ch=>{
+        const o=ch.val();
+        const status=o.status||"Pending";
+        notifList.innerHTML+=`<li>${o.items[0].name} - <b>${status}</b></li>`;
+      });
+    });
+  });
+
+  // Close notif when clicking outside
+  document.addEventListener("click",(e)=>{
+    if(!notifBox.contains(e.target) && e.target!==notifBtn){
+      notifBox.style.display="none";
+    }
+  });
+</script>
+</body>
+</html>

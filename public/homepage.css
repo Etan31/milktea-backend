@@ -1,0 +1,92 @@
+/* Google Font for milk tea vibes */
+@import url('https://fonts.googleapis.com/css2?family=Quicksand:wght@400;600&display=swap');
+
+/* Grid */
+.pdf-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 20px;
+  padding: 40px;
+  font-family: 'Quicksand', sans-serif;
+}
+
+.pdf-card {
+  background: #f9e0d9; /* soft milk tea cream */
+  border-radius: 15px;
+  padding: 15px;
+  text-align: center;
+  color: #5a3e36; /* milk tea brown */
+  transition: transform 0.2s, box-shadow 0.3s;
+  box-shadow: 0 4px 8px rgba(90, 62, 54, 0.2);
+}
+.pdf-card:hover { 
+  transform: scale(1.05); 
+  box-shadow: 0 6px 12px rgba(90, 62, 54, 0.3);
+}
+.pdf-card img {
+  width: 100px; height: 120px;
+  object-fit: cover;
+  margin-bottom: 10px;
+  border-radius: 8px;
+}
+.actions { 
+  display: flex; 
+  justify-content: space-around; 
+}
+.btn {
+  padding: 6px 12px;
+  font-size: 14px;
+  border-radius: 8px;
+  font-weight: 600;
+  text-decoration: none;
+  font-family: 'Quicksand', sans-serif;
+  transition: background 0.3s ease;
+}
+.read { 
+  background: #f6b8d1; /* pastel pink */
+  color: #5a3e36; 
+}
+.download { 
+  background: #c3e1c3; /* mint green */
+  color: #3a553a; 
+}
+.btn:hover { opacity: 0.9; }
+
+/* Navbar */
+.header {
+  background: #e6b89c; /* milk tea caramel */
+  padding: 15px 30px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.logo { 
+  color: #fff; 
+  font-size: 22px; 
+  font-family: 'Quicksand', sans-serif;
+  font-weight: 600;
+}
+.navbar { 
+  display: flex; 
+  align-items: center; 
+}
+.navbar button {
+  margin-left: 20px;
+  background: #f9e0d9; 
+  border: 1px solid #fff;
+  padding: 6px 14px;
+  color: #5a3e36;
+  cursor: pointer;
+  border-radius: 8px;
+  font-family: 'Quicksand', sans-serif;
+}
+.navbar button:hover { 
+  background: #f6b8d1; 
+  color: #5a3e36;
+}
+.profile-icon {
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  cursor: pointer;
+  border: 2px solid #fff;
+}

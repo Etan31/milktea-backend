@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Messages</title>
+
+  <style>
+    body { margin: 0; font-family: Arial, sans-serif; background: #f4f4f4; display: flex; }
+
+    /* LEFT PANEL */
+    .users-list {
+      width: 30%;
+      height: 100vh;
+      overflow-y: auto;
+      background: #8e44ad;
+      color: white;
+      padding: 10px;
+    }
+
+    .back-btn {
+      background: white;
+      color: #8e44ad;
+      padding: 10px 15px;
+      border-radius: 6px;
+      display: inline-block;
+      cursor: pointer;
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+
+    .user-item {
+      padding: 15px;
+      background: rgba(255,255,255,0.2);
+      margin: 5px 0;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    .user-item:hover { background: rgba(255,255,255,0.3); }
+
+    /* RIGHT PANEL */
+    .chat-area {
+      width: 70%;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .delete-all-btn {
+      background: red;
+      color: white;
+      padding: 8px 15px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: bold;
+      float: right;
+      margin-bottom: 10px;
+    }
+
+    .messages {
+      flex: 1;
+      border: 1px solid #ccc;
+      padding: 10px;
+      overflow-y: auto;
+      background: white;
+      border-radius: 10px;
+      height: 450px;
+    }
+
+    .msg {
+      padding: 10px;
+      margin: 8px 0;
+      border-radius: 8px;
+      max-width: 70%;
+    }
+
+    .user { background: #dcdcdc; }
+    .admin { background: #8e44ad; color: white; margin-left: auto; }
+
+    .input-box {
+      display: flex;
+      gap: 10px;
+      margin-top: 15px;
+    }
+
+    input { flex: 1; padding: 10px; }
+    button { padding: 10px 20px; background: #8e44ad; color: white; border: none; }
+  </style>
+</head>
+
+<body>
+
+<div class="users-list" id="usersList">
+  <div class="back-btn" onclick="history.back()">⬅ Back</div>
+  <h2>📨 Users</h2>
+</div>
+
+<div class="chat-area">
+  <h2 id="chatTitle">Select a user</h2>
+
+  <!-- DELETE WHOLE CHAT BUTTON -->
+  <button class="delete-all-btn" onclick="deleteWholeChat()">Delete Entire Chat</button>
+
+  <div class="messages" id="messages"></div>
+
+  <div class="input-box">
+    <input type="text" id="adminText" placeholder="Type a message...">
+    <button onclick="sendAdmin()">Send</button>
+  </div>
+</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+  import { getDatabase, ref, onValue, push, remove } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-database.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyCpXS9lRDsfHGzLwnT2YFFPM3bRU_6E3r0",
+    authDomain: "e-library-bdbb1.firebaseapp.com",
+    databaseURL: "https://e-library-bdbb1-default-rtdb.firebaseio.com",
+    projectId: "e-library-bdbb1",
+    storageBucket: "e-library-bdbb1.appspot.com",
+    messagingSenderId: "721888979016",
+    appId: "1:721888979016:web:fe65826bc262189a11107d"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+
+  let selectedUser = null;
+  let usersInfo = {};
+
+  const usersListDiv = document.getElementById("usersList");
+  const messagesDiv = document.getElementById("messages");
+
+  /* LOAD USERS INFO (full name) */
+  const usersRef = ref(db, "users/");
+  onValue(usersRef, snapshot => {
+    usersInfo = snapshot.val() || {};
+  });
+
+  /* LOAD USER LIST */
+  const chatsRef = ref(db, "chats/");
+  onValue(chatsRef, snapshot => {
+    usersListDiv.innerHTML = `
+      <div class="back-btn" onclick="history.back()">⬅ Back</div>
+      <h2>📨 Users</h2>
+    `;
+
+    snapshot.forEach(child => {
+      const uid = child.key;
+      const fullName = usersInfo[uid]?.fullName || uid;
+
+      const div = document.createElement("div");
+      div.classList.add("user-item");
+      div.textContent = fullName;
+
+      div.onclick = () => openChat(uid, fullName);
+
+      usersListDiv.appendChild(div);
+    });
+  });
+
+  /* OPEN CHAT */
+  function openChat(uid, fullName) {
+    selectedUser = uid;
+    document.getElementById("chatTitle").textContent = "Chat with: " + fullName;
+
+    const chatRef = ref(db, "chats/" + uid);
+
+    onValue(chatRef, snapshot => {
+      messagesDiv.innerHTML = "";
+
+      snapshot.forEach(child => {
+        const msg = child.val();
+        const div = document.createElement("div");
+
+        div.classList.add("msg");
+        div.classList.add(msg.sender === "admin" ? "admin" : "user");
+        div.textContent = msg.text;
+
+        messagesDiv.appendChild(div);
+      });
+
+      messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    });
+  }
+
+  /* DELETE WHOLE CHAT */
+  window.deleteWholeChat = () => {
+    if (!selectedUser) return alert("Select a user first!");
+
+    if (!confirm("Delete entire conversation?")) return;
+
+    remove(ref(db, "chats/" + selectedUser));
+
+    messagesDiv.innerHTML = "";
+    alert("Chat deleted.");
+  };
+
+  /* ADMIN SEND MESSAGE */
+  window.sendAdmin = () => {
+    if (!selectedUser) return alert("Select a user first!");
+
+    const text = document.getElementById("adminText").value.trim();
+    if (!text) return;
+
+    push(ref(db, "chats/" + selectedUser), {
+      sender: "admin",
+      text: text
+    });
+
+    document.getElementById("adminText").value = "";
+  };
+</script>
+
+</body>
+</html>

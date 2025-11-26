@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Messages</title>
+
+  <style>
+    body { margin: 0; font-family: Arial, sans-serif; background: #fafafa; }
+    header { background: #8e44ad; color: white; padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; }
+    h1 { margin: 0; font-size: 20px; }
+
+    .chat-box {
+      width: 100%;
+      max-width: 600px;
+      margin: 20px auto;
+      background: white;
+      padding: 15px;
+      border-radius: 10px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .messages {
+      flex: 1;
+      overflow-y: auto;
+      border: 1px solid #ddd;
+      padding: 10px;
+      border-radius: 5px;
+      height: 420px;
+      background: #fdfdfd;
+    }
+
+    .msg {
+      margin: 5px 0;
+      padding: 8px 12px;
+      border-radius: 8px;
+      max-width: 70%;
+    }
+
+    .user { background: #8e44ad; color: white; margin-left: auto; text-align: right; }
+    .admin { background: #ecf0f1; color: #333; text-align: left; }
+
+    .input-box { display: flex; gap: 10px; margin-top: 10px; }
+    input {
+      flex: 1;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+    button {
+      padding: 10px 15px;
+      border: none;
+      background: #8e44ad;
+      color: white;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    /* ADMIN NAME LABEL */
+    #adminNameLabel {
+      font-size: 14px;
+      color: #555;
+      margin: -5px 0 10px 5px;
+      font-style: italic;
+    }
+  </style>
+</head>
+
+<body>
+
+<header>
+  <h1>💬 Messages</h1>
+  <button onclick="window.location.href='homepage.html'" style="background:#6c3483; color:white; border:none; padding:8px 15px; border-radius:6px;">⬅ Back</button>
+</header>
+
+<div class="chat-box">
+
+  <!-- ADMIN NAME SHOW HERE -->
+  <div id="adminNameLabel">Chat with Admin: Loading...</div>
+
+  <div class="messages" id="messages"></div>
+
+  <div class="input-box">
+    <input type="text" id="msgInput" placeholder="Type a message...">
+    <button onclick="sendMessage()">Send</button>
+  </div>
+</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+  import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
+  import { getDatabase, ref, push, onValue, get } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-database.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyCpXS9lRDsfHGzLwnT2YFFPM3bRU_6E3r0",
+    authDomain: "e-library-bdbb1.firebaseapp.com",
+    databaseURL: "https://e-library-bdbb1-default-rtdb.firebaseio.com",
+    projectId: "e-library-bdbb1",
+    storageBucket: "e-library-bdbb1.appspot.com",
+    messagingSenderId: "721888979016",
+    appId: "1:721888979016:web:fe65826bc262189a11107d"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getDatabase(app);
+
+  let currentUser = null;
+  const messagesDiv = document.getElementById("messages");
+  const msgInput = document.getElementById("msgInput");
+  const adminLabel = document.getElementById("adminNameLabel");
+
+  // ✔ FIND ADMIN FULL NAME
+  function loadAdminName() {
+    const usersRef = ref(db, "users/");
+
+    get(usersRef).then(snapshot => {
+      snapshot.forEach(user => {
+        const data = user.val();
+        if (data.role === "admin") {
+          adminLabel.textContent = "Chat with Admin: " + (data.fullName || "Admin");
+        }
+      });
+    });
+  }
+
+  // ✔ USER MUST BE LOGGED IN
+  onAuthStateChanged(auth, (user) => {
+    if (!user) {
+      alert("Please login first.");
+      window.location.href = "login.html";
+      return;
+    }
+
+    currentUser = user;
+
+    loadAdminName();
+    loadMessages();
+  });
+
+  // ✔ LOAD ALL MESSAGES (user ↔ admin)
+  function loadMessages() {
+    const chatRef = ref(db, "chats/" + currentUser.uid);
+
+    onValue(chatRef, (snapshot) => {
+      messagesDiv.innerHTML = "";
+      snapshot.forEach(child => {
+        const msg = child.val();
+        const div = document.createElement("div");
+        div.classList.add("msg", msg.sender === "admin" ? "admin" : "user");
+        div.textContent = msg.text;
+        messagesDiv.appendChild(div);
+      });
+
+      messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    });
+  }
+
+  // ✔ SEND MESSAGE TO ADMIN
+  window.sendMessage = () => {
+    const text = msgInput.value.trim();
+    if (!text) return;
+
+    push(ref(db, "chats/" + currentUser.uid), {
+      sender: "user",
+      text: text
+    });
+
+    msgInput.value = "";
+  };
+</script>
+</body>
+</html>

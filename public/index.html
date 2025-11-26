@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MilkTea Haven</title>
+    <link rel="stylesheet" href="Frontpage.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+<body>
+   <header class="header">
+        <a href="" class="logo animate__animated animate__slideInLeft">MilkTea Haven</a>
+
+        <nav class="navbar animate__animated animate__slideInRight animate__delay-1s">
+            <a href="" class="active">Home</a>
+            <a href="#about">About</a>
+            <a href="#menu">Menu</a>
+            <a href="#contact">Contact</a>
+        </nav>
+   </header>x
+
+   <section class="home">
+        <div class="home-content">
+            <h1 class="animate__animated animate__slideInLeft">Welcome to <br> MilkTea Haven</h1>
+            <h3 class="animate__animated animate__slideInLeft animate__delay-1s">Your Daily Cup of Happiness</h3>
+            <p class="animate__animated animate__slideInLeft animate__delay-2s">
+                MilkTea Haven is your cozy spot in the city where every sip is brewed with love. 
+                Enjoy a variety of milk teas, fruit teas, and snacks while relaxing with friends. 
+                Order online and have your favorite drink delivered fresh to your door!
+            </p>
+            <div class="btn-box animate__animated animate__slideInLeft animate__delay-3s">
+                <a href="signup.html">Sign Up</a>
+                <a href="login.html">Log in</a>
+            </div>
+            <div class="pic">
+                <div class="img1"><img src="milktea1.jpg" alt="Milk Tea 1"></div>
+                <div class="img2"><img src="milktea2.jpg" alt="Milk Tea 2"></div>
+                <div class="pico">
+                    <div class="img3"><img src="milktea3.jpg" alt="Milk Tea 3"></div>
+                    
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="about" id="about">
+        <h2 class="heading">About <span>Us</span></h2>
+        <div class="pica">
+            <img src="milktea3.jpg" alt="About Us">
+            <span class="circle-spin"></span>
+        </div>
+        <div class="about-content">
+            <p>
+                At MilkTea Haven, we believe every sip should be a sweet experience. 
+                We offer freshly brewed teas with natural ingredients, premium pearls, 
+                and a wide variety of flavors to match your cravings. 
+                It’s not just milk tea—it’s happiness in a cup!
+            </p>
+        </div>
+        <div class="btn-box btns x">
+            <a href="#" class="btn">Read more</a>
+        </div>
+    </section>
+
+    <section class="about" id="menu">
+        <h2 class="heading">Our <span>Menu</span></h2>
+        <div class="about-content">
+            <p>
+                From classic milk teas and fruit teas to cheesy foam specials, 
+                MilkTea Haven has it all. Pair your drink with our snacks and desserts 
+                for the ultimate treat. Don’t forget to check our seasonal specials!
+            </p>
+        </div>
+    </section>
+
+    <section class="about" id="contact">
+        <h2 class="heading">Contact <span>Us</span></h2>
+        <div class="about-content">
+            <p>
+                📍 Visit us at: 123 Sweet Street, Tea City<br>
+                📞 Call us: +63 912 345 6789<br>
+                📧 Email: milkteahaven@gmail.com<br>
+                We’d love to hear from you! 🍵
+            </p>
+        </div>
+    </section>
+
+    <button onclick="orderNow()">Submit</button>
+    <script src="script.js"></script>
+</body>
+</html>
+node server.js

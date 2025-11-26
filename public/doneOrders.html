@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Done Orders</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #f4f4f9; padding: 20px; }
+    h1 { color: #27ae60; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    th, td { border: 1px solid #ccc; padding: 10px; text-align: center; }
+    th { background: #27ae60; color: white; }
+    .btn { padding: 6px 12px; border: none; border-radius: 4px; cursor: pointer; }
+    .btn.back { background: #8e44ad; color: white; margin-bottom: 20px; }
+    .card { background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
+    #searchBar { width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 6px; font-size: 16px; }
+  </style>
+</head>
+<body>
+
+  <button class="btn back" onclick="goBack()">⬅ Back to Admin</button>
+  <h1>✅ All Done Orders</h1>
+
+  <input type="text" id="searchBar" placeholder="Search orders by email, item, or date...">
+
+  <div class="card">
+    <table id="doneOrdersTable">
+      <thead>
+        <tr>
+          <th>User Email</th>
+          <th>Items</th>
+          <th>Total</th>
+          <th>Payment</th>
+          <th>Status</th>
+          <th>Date/Time</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+<script>
+const doneOrdersTable = document.querySelector("#doneOrdersTable tbody");
+const searchBar = document.getElementById("searchBar");
+
+async function loadDoneOrders(){
+  doneOrdersTable.innerHTML = "<tr><td colspan='6'>Loading...</td></tr>";
+  try {
+    const res = await fetch("/api/orders/done");
+    const json = await res.json();
+    if(!json.success || !Array.isArray(json.done_orders)) {
+      doneOrdersTable.innerHTML = "<tr><td colspan='6'>No done orders</td></tr>";
+      return;
+    }
+    doneOrdersTable.innerHTML = "";
+    json.done_orders.forEach(o => {
+      const items = (() => {
+        try {
+          const arr = typeof o.items === "string" ? JSON.parse(o.items) : (o.items || []);
+          return (Array.isArray(arr) ? arr : [arr]).map(it => it.name || it.title || JSON.stringify(it)).join(", ");
+        } catch { return JSON.stringify(o.items || ""); }
+      })();
+
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${escapeHtml(o.customer_email || o.customer_email || "N/A")}</td>
+        <td style="text-align:left">${escapeHtml(items)}</td>
+        <td>₱${Number(o.total_amount || 0).toFixed(2)}</td>
+        <td>${escapeHtml(o.payment_method || "N/A")}</td>
+        <td>${escapeHtml(o.status || "completed")}</td>
+        <td>${o.delivered_at ? new Date(o.delivered_at).toLocaleString() : (o.created_at ? new Date(o.created_at).toLocaleString() : "—")}</td>
+      `;
+      doneOrdersTable.appendChild(tr);
+    });
+  } catch (err) {
+    console.error("Load done orders error:", err);
+    doneOrdersTable.innerHTML = "<tr><td colspan='6'>Error loading done orders</td></tr>";
+  }
+}
+
+searchBar.addEventListener("keyup", () => {
+  const filter = searchBar.value.toLowerCase();
+  const rows = doneOrdersTable.getElementsByTagName("tr");
+  for (let i = 0; i < rows.length; i++) {
+    const text = rows[i].innerText.toLowerCase();
+    rows[i].style.display = text.includes(filter) ? "" : "none";
+  }
+});
+
+function escapeHtml(s) { return String(s || "").replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+window.goBack = () => window.location.href = "admin.html";
+
+loadDoneOrders();
+</script>
+</body>
+</html>

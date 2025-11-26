@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Contact Admin</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #f9f9f9; padding: 20px; }
+    .container { max-width: 500px; margin: auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+    input, textarea { width: 100%; padding: 10px; margin: 8px 0; border: 1px solid #ccc; border-radius: 6px; }
+    button { background: #27ae60; color: white; padding: 10px 15px; border: none; border-radius: 6px; cursor: pointer; }
+    button:hover { background: #219150; }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+<body>
+  <div class="container">
+    <h2>📩 Send a Message</h2>
+    <form id="messageForm">
+      <input type="text" id="name" placeholder="Your Name" required>
+      <input type="email" id="email" placeholder="Your Email" required>
+      <textarea id="message" rows="5" placeholder="Write your message..." required></textarea>
+      <button type="submit">Send Message</button>
+    </form>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+    import { getDatabase, ref, push } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCpXS9lRDsfHGzLwnT2YFFPM3bRU_6E3r0",
+      authDomain: "e-library-bdbb1.firebaseapp.com",
+      databaseURL: "https://e-library-bdbb1-default-rtdb.firebaseio.com",
+      projectId: "e-library-bdbb1",
+      storageBucket: "e-library-bdbb1.appspot.com",
+      messagingSenderId: "721888979016",
+      appId: "1:721888979016:web:fe65826bc262189a11107d"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    document.getElementById("messageForm").addEventListener("submit", (e) => {
+      e.preventDefault();
+
+      const name = document.getElementById("name").value;
+      const email = document.getElementById("email").value;
+      const message = document.getElementById("message").value;
+
+      const messagesRef = ref(db, "messages");
+
+      push(messagesRef, {
+        name: name,
+        email: email,
+        message: message,
+        timestamp: new Date().toISOString()
+      })
+      .then(() => {
+        Swal.fire("✅ Sent!", "Your message has been sent to admin.", "success");
+        document.getElementById("messageForm").reset();
+      })
+      .catch((error) => {
+        Swal.fire("❌ Error", error.message, "error");
+      });
+    });
+  </script>
+</body>
+</html>
